@@ -62,15 +62,27 @@ def partial_sliced_score_matching(energy_net, samples, noise=None, detach=False,
 
 
 def sliced_score_matching(energy_net, samples, n_particles=1):
+    '''
+    energy_net: the NN
+    samples: data
+    n_particles: number of trace estimation samples
+    
+    Using autograd twice: Algorithm 1 from Sliced Score Matching
+    energy_net is unnormalized probability <=> energy which we have to differentiate once to get score
+    '''
+    
+    # expand data samples to size of estimation samples and make differentiable
     dup_samples = samples.unsqueeze(0).expand(n_particles, *samples.shape).contiguous().view(-1, *samples.shape[1:])
     dup_samples.requires_grad_(True)
+    # N(0,1) random samples
     vectors = torch.randn_like(dup_samples)
     vectors = vectors / torch.norm(vectors, dim=-1, keepdim=True)
-
-    logp = -energy_net(dup_samples).sum()
+    
+    logp = -energy_net(dup_samples).sum() # g
     grad1 = autograd.grad(logp, dup_samples, create_graph=True)[0]
-    gradv = torch.sum(grad1 * vectors)
-    loss1 = torch.sum(grad1 * vectors, dim=-1) ** 2 * 0.5
+    gradv = torch.sum(grad1 * vectors) # grad * v
+    
+    loss1 = torch.sum(grad1 * vectors, dim=-1) ** 2 * 0.5 # 1/2 * [s_\theta(x)*v]**2
     grad2 = autograd.grad(gradv, dup_samples, create_graph=True)[0]
     loss2 = torch.sum(vectors * grad2, dim=-1)
 
