@@ -3,10 +3,11 @@ import torch.autograd as autograd
 
 
 def dsm(energy_net, samples, sigma=1):
-    samples.requires_grad_(True)
-    vector = torch.randn_like(samples) * sigma
-    perturbed_inputs = samples + vector
+    samples.requires_grad_(True) # make differentiable
+    vector = torch.randn_like(samples) * sigma # random samples for perturbing data
+    perturbed_inputs = samples + vector # perturbing samples
     logp = -energy_net(perturbed_inputs)
+    # getting score
     dlogp = sigma ** 2 * autograd.grad(logp.sum(), perturbed_inputs, create_graph=True)[0]
     kernel = vector
     loss = torch.norm(dlogp + kernel, dim=-1) ** 2
