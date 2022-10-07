@@ -1,6 +1,9 @@
 import torch
 import torch.autograd as autograd
 
+'''
+dsm is denoising score matching
+'''
 
 def dsm(energy_net, samples, sigma=1):
     samples.requires_grad_(True) # make differentiable
